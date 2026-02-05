@@ -10,6 +10,8 @@ const app = express();
 
 connectDB();
 
+
+
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -18,6 +20,10 @@ app.use(express.json());
 app.get("/", (req, res) => {
     res.json({ message: "SafeRoute backend is running 🚦" });
 });
+
+const emergencyRoutes = require("./src/routes/emergencyRoutes");
+
+app.use("/api/emergency", emergencyRoutes);
 
 //Import routes
 const safetyRoutes = require("./src/routes/safetyRoutes");
