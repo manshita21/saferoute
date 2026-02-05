@@ -1,8 +1,14 @@
+console.log("CWD:", process.cwd());
+
 const express = require("express");
 const cors = require("cors");
-require("dotenv").config();
+require("dotenv").config({ path: "./.env" });
+
+const connectDB = require("./src/config/db");
 
 const app = express();
+
+connectDB();
 
 // Middleware
 app.use(cors());
