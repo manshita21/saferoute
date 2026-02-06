@@ -21,15 +21,23 @@ app.get("/", (req, res) => {
     res.json({ message: "SafeRoute backend is running 🚦" });
 });
 
-const emergencyRoutes = require("./src/routes/emergencyRoutes");
-
-app.use("/api/emergency", emergencyRoutes);
-
 //Import routes
+const emergencyRoutes = require("./src/routes/emergencyRoutes");
 const safetyRoutes = require("./src/routes/safetyRoutes");
+const feedbackRoutes = require("./src/routes/feedbackRoutes");
 
-// Use routes
+console.log("feedbackRoutes value:", feedbackRoutes);
+
+
+console.log("emergencyRoutes type:", typeof emergencyRoutes);
+console.log("safetyRoutes type:", typeof safetyRoutes);
+console.log("feedbackRoutes type:", typeof feedbackRoutes);
+
+//Use routes
+app.use("/api/emergency", emergencyRoutes);
 app.use("/api/safety", safetyRoutes);
+app.use("/api/feedback", feedbackRoutes);
+
 
 // Port
 const PORT = process.env.PORT || 5000;
