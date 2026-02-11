@@ -1,9 +1,6 @@
 const express = require("express");
 const CommunityFeedback = require("../models/CommunityFeedback");
 const router = express.Router();
-
-
-
 router.post("/check", async (req, res) => {
     const { source, destination, time } = req.body;
 

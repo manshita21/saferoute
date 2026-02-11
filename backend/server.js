@@ -38,6 +38,12 @@ app.use("/api/emergency", emergencyRoutes);
 app.use("/api/safety", safetyRoutes);
 app.use("/api/feedback", feedbackRoutes);
 
+const authRoutes = require("./src/routes/authRoutes");
+console.log("authRoutes type:", typeof authRoutes);
+console.log("authRoutes value:", authRoutes);
+
+app.use("/api/auth", authRoutes);
+
 
 // Port
 const PORT = process.env.PORT || 5000;
