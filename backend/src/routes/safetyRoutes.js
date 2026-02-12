@@ -1,6 +1,6 @@
 const express = require("express");
 const CommunityFeedback = require("../models/CommunityFeedback");
-const { fetchEnvironmentalContext } = require("../utils/overpassService");
+const fetchEnvironmentalContext = require("../utils/overpassService");
 console.log("fetchEnvironmentalContext type:", typeof fetchEnvironmentalContext);
 
 const router = express.Router();
@@ -26,14 +26,28 @@ router.post("/check", async (req, res) => {
         else if (avgRating >= 4) score += 10;
     }
 
-    if (lat && lon) {
+    /*if (lat && lon) {
         const env = await fetchEnvironmentalContext(lat, lon);
 
-        if (env.poiCount > 20) score += 10;
-        if (env.poiCount < 5) score -= 10;
-        if (env.hospitalNearby) score += 5;
-        if (env.policeNearby) score += 5;
+       
+    }*/
+
+    let env = { poiCount: 0, hospitalNearby: false, policeNearby: false };
+
+    if (lat && lon) {
+        try {
+            env = await fetchEnvironmentalContext(lat, lon);
+            if (env.poiCount > 20) score += 10;
+            if (env.poiCount < 5) score -= 10;
+            if (env.hospitalNearby) score += 5;
+            if (env.policeNearby) score += 5;
+
+        } catch (e) {
+            console.log("Env fetch failed, skipping");
+        }
     }
+
+
 
     let level = "SAFE";
     if (score <= 70) level = "MODERATE";
