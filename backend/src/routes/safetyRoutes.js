@@ -1,12 +1,20 @@
 const express = require("express");
 const CommunityFeedback = require("../models/CommunityFeedback");
 const fetchEnvironmentalContext = require("../utils/overpassService");
+const stationaryDetector = require("../utils/stationaryDetector");
+
 console.log("fetchEnvironmentalContext type:", typeof fetchEnvironmentalContext);
 
 const router = express.Router();
 
 router.post("/check", async (req, res) => {
     const { source, destination, time, lat, lon } = req.body;
+
+    const userId = req.user?.id || "testUser"; // for testing
+
+    const movementStatus = stationaryDetector(userId, lat, lon);
+
+    console.log("Movement status:", movementStatus);
 
     let score = 100;
 
@@ -59,7 +67,8 @@ router.post("/check", async (req, res) => {
         time,
         score,
         level,
-        CommunityFeedbackCount: feedbacks.length
+        CommunityFeedbackCount: feedbacks.length,
+        movementStatus
     });
 });
 

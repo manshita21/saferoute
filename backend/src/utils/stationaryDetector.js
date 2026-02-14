@@ -1,6 +1,6 @@
 const trackingState = require("./trackingState");
 
-const STATIONARY_TIME_LIMIT = 5 * 60 * 1000; // 5 minutes
+const STATIONARY_TIME_LIMIT = 10000; // 10 sec
 const DISTANCE_THRESHOLD = 20; // meters
 
 const detectStationary = (userId, lat, lon) => {
