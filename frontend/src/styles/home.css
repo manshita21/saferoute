@@ -1,0 +1,53 @@
+.home-hero {
+  padding: 60px;
+  color: white;
+  background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+}
+
+.features-container {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  margin-top: 50px;
+  flex-wrap: wrap;
+}
+
+.feature-card {
+  width: 260px;
+  padding: 25px;
+  border-radius: 15px;
+  background: #1f2a38;
+  color: white;
+  text-decoration: none;
+  transition: 0.3s;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+}
+
+.feature-card:hover {
+  transform: translateY(-8px);
+  background: #2b3a4f;
+}
+.landing-description {
+  color: #ddd;
+  margin-bottom: 25px;
+  font-size: 1.1rem;
+}
+
+.landing-divider {
+  height: 1px;
+  background: rgba(255,255,255,0.2);
+  margin: 30px 0;
+}
+
+.badge-card span {
+  display: block;
+  font-size: 0.8rem;
+  opacity: 0.7;
+  margin-top: 5px;
+}
+
+.landing-footer-text {
+  margin-top: 25px;
+  font-size: 0.9rem;
+  opacity: 0.8;
+}

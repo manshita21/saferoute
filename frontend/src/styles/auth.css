@@ -1,0 +1,59 @@
+.home-container {
+    font-family: "Poppins", sans-serif;
+    color: white;
+    background: linear-gradient(to right, #0f2027, #203a43, #2c5364);
+    min-height: 100vh;
+  }
+  
+  .hero {
+    text-align: center;
+    padding: 120px 20px;
+  }
+  
+  .hero h1 {
+    font-size: 60px;
+    margin-bottom: 20px;
+  }
+  
+  .hero p {
+    font-size: 20px;
+    opacity: 0.8;
+  }
+  
+  .hero-buttons {
+    margin-top: 30px;
+  }
+  
+  .btn {
+    padding: 12px 30px;
+    border-radius: 30px;
+    margin: 10px;
+    text-decoration: none;
+    font-weight: bold;
+  }
+  
+  .primary {
+    background: #00c6ff;
+    color: white;
+  }
+  
+  .secondary {
+    border: 2px solid white;
+    color: white;
+  }
+  
+  .features {
+    display: flex;
+    justify-content: center;
+    padding: 50px;
+    gap: 30px;
+  }
+  
+  .feature-card {
+    background: rgba(255,255,255,0.1);
+    padding: 30px;
+    border-radius: 15px;
+    width: 250px;
+    backdrop-filter: blur(8px);
+  }
+  

@@ -1,0 +1,32 @@
+.route-page {
+    padding: 30px;
+    color: white;
+  }
+  
+  .map-section {
+    margin-top: 25px;
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  
+  .result-section {
+    margin-top: 30px;
+    padding: 20px;
+    background: #0f172a;
+    border-radius: 16px;
+  }
+  
+  .risk-reasons {
+    margin-top: 20px;
+  }
+  
+  .risk-reasons ul {
+    margin-top: 10px;
+    padding-left: 20px;
+  }
+  
+  .risk-reasons li {
+    margin-bottom: 8px;
+    color: #f87171;
+  }
+  

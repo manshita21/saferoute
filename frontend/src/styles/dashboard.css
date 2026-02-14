@@ -1,0 +1,25 @@
+.dashboard {
+  padding: 40px;
+  text-align: center;
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 25px;
+  margin-top: 30px;
+}
+
+.feature-card {
+  background: linear-gradient(145deg, #0f172a, #1e293b);
+  padding: 30px;
+  border-radius: 16px;
+  cursor: pointer;
+  color: white;
+  transition: 0.3s;
+  box-shadow: 0 0 20px rgba(0,0,0,0.4);
+}
+
+.feature-card:hover {
+  background: linear-gradient(145deg, #2563eb, #1d4ed8);
+}
