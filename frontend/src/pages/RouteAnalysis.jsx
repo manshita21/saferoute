@@ -1,47 +1,59 @@
 import { useState } from "react";
-import RouteForm from "../components/RouteForm";
-import MapView from "../components/MapView";
-import SafetyBadge from "../components/SafetyBadge";
-import "../styles/routeAnalysis.css";
 
-export default function RouteAnalysis() {
+export default function SafeRoute() {
 
-  const [routeData, setRouteData] = useState(null);
-  const [recommended, setRecommended] = useState(null);
+  const [start,setStart] = useState("");
+  const [dest,setDest] = useState("");
+  const [pin1,setPin1] = useState("");
+  const [pin2,setPin2] = useState("");
 
-  const handleRoutesGenerated = (data) => {
-    setRouteData(data);
+  const checkRoute = () => {
 
-    const safest = data.routes.find(r => r.risk === "Low");
-    setRecommended(safest);
-  };
+    if(!/^[0-9]{6}$/.test(pin1) || !/^[0-9]{6}$/.test(pin2)){
+      alert("Enter valid 6 digit pincode");
+      return;
+    }
+
+    if(start.length < 3 || dest.length < 3){
+      alert("Enter valid place name");
+      return;
+    }
+
+    alert("Checking Safe Route...");
+  }
 
   return (
-    <div className="route-page">
+    <div className="glass route-box">
 
-      <h1>Safe Route Analysis</h1>
+      <h2>Safe Route Analysis</h2>
 
-      <RouteForm onRoutesGenerated={handleRoutesGenerated} />
+      <input
+        placeholder="Start Location"
+        className="big-input"
+        onChange={(e)=>setStart(e.target.value)}
+      />
 
-      {routeData && (
-        <div className="glass" style={{marginTop:"20px"}}>
+      <input
+        placeholder="Start Pincode"
+        className="big-input"
+        onChange={(e)=>setPin1(e.target.value)}
+      />
 
-          <h3>Recommended Route</h3>
-          <p><b>{recommended?.name}</b></p>
+      <input
+        placeholder="Destination"
+        className="big-input"
+        onChange={(e)=>setDest(e.target.value)}
+      />
 
-          <h4>Predicted Risk Factors</h4>
-          <ul>
-            {recommended?.reasons.map((r,i)=>(
-              <li key={i}>⚠ {r}</li>
-            ))}
-          </ul>
+      <input
+        placeholder="Destination Pincode"
+        className="big-input"
+        onChange={(e)=>setPin2(e.target.value)}
+      />
 
-          <SafetyBadge score={recommended?.risk === "Low" ? 90 : 50} />
-
-        </div>
-      )}
-
-      {routeData && <MapView routeData={routeData} />}
+      <button className="btn-primary" onClick={checkRoute}>
+        Check Safety
+      </button>
 
     </div>
   );

@@ -22,9 +22,26 @@ export default function RouteForm({ onRoutesGenerated }) {
 
   return(
     <form className="glass" onSubmit={handleSubmit}>
-      <input placeholder="Start" value={start} onChange={e=>setStart(e.target.value)} />
-      <input placeholder="Destination" value={end} onChange={e=>setEnd(e.target.value)} />
-      <button className="btn-primary">Analyze</button>
+      <input
+  className="big-input"
+  placeholder="Enter Start Location"
+/>
+
+<input
+  className="big-input"
+  placeholder="Enter Destination"
+/>
+
+<input
+  className="big-input"
+  placeholder="Enter Start Pincode"
+/>
+
+<input
+  className="big-input"
+  placeholder="Enter Destination Pincode"
+/>
+
     </form>
   );
 }

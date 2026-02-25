@@ -1,52 +1,31 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import { useAuth } from "./context/AuthContext";
-
-import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
-import RouteAnalysis from "./pages/RouteAnalysis";
-import SafetyTracker from "./pages/SafetyTracker";
-import EmergencyContacts from "./pages/EmergencyContacts";
+import SafeRoute from "./pages/RouteAnalysis";
 import Profile from "./pages/Profile";
-
-function ProtectedRoute({ children }) {
-  const { user } = useAuth();
-  return user ? children : <Navigate to="/login" />;
-}
+import Tracker from "./pages/SafetyTracker";
 
 export default function AppRoutes() {
+  const user = localStorage.getItem("user");
+
   return (
     <Routes>
-      <Route path="/" element={<Home />} />
+      {!user ? (
+        <>
+          <Route path="/" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+        </>
+      ) : (
+        <>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/route" element={<SafeRoute />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/tracker" element={<Tracker />} />
+        </>
+      )}
 
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-
-      <Route
-        path="/dashboard"
-        element={<ProtectedRoute><Dashboard /></ProtectedRoute>}
-      />
-
-      <Route
-        path="/route"
-        element={<ProtectedRoute><RouteAnalysis /></ProtectedRoute>}
-      />
-
-      <Route
-        path="/tracker"
-        element={<ProtectedRoute><SafetyTracker /></ProtectedRoute>}
-      />
-
-      <Route
-        path="/emergency"
-        element={<ProtectedRoute><EmergencyContacts /></ProtectedRoute>}
-      />
-
-      <Route
-        path="/profile"
-        element={<ProtectedRoute><Profile /></ProtectedRoute>}
-      />
+      <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   );
 }
