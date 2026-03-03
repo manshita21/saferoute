@@ -27,6 +27,7 @@ function RoutingControl({
   useEffect(() => {
     if (!source || !destination) return;
 
+    // @ts-ignore
     const control = L.Routing.control({
       waypoints: [L.latLng(source.lat, source.lng), L.latLng(destination.lat, destination.lng)],
       routeWhileDragging: false,
