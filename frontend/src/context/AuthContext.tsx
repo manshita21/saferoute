@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { readStorage, removeStorage, writeStorage } from "../utils/storage";
-
+import { registerUser, loginUser } from "../utils/api";
 const USERS_KEY = "saferoute.users.v1";
 const SESSION_KEY = "saferoute.session.v1";
 
@@ -31,61 +30,57 @@ function normalizeEmail(email: string) {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [session, setSession] = useState<Session | null>(() =>
-    readStorage<Session | null>(SESSION_KEY, null),
-  );
-  const [users, setUsers] = useState<StoredUser[]>(() => readStorage<StoredUser[]>(USERS_KEY, []));
-
-  useEffect(() => {
-    writeStorage(USERS_KEY, users);
-  }, [users]);
-
-  useEffect(() => {
-    if (session) writeStorage(SESSION_KEY, session);
-    else removeStorage(SESSION_KEY);
-  }, [session]);
-
-  const user = useMemo(() => {
-    if (!session) return null;
-    const u = users.find((x) => x.id === session.userId);
-    if (!u) return null;
-    return { id: u.id, name: u.name, email: u.email };
-  }, [session, users]);
+  const [user, setUser] = useState<
+    Pick<StoredUser, "id" | "name" | "email"> | null
+  >(null);
 
   const value: AuthContextValue = useMemo(
     () => ({
       user,
+
       register: async ({ name, email, password }) => {
         const cleanEmail = normalizeEmail(email);
         const cleanName = name.trim();
-        if (cleanName.length < 2) throw new Error("Please enter your name.");
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) throw new Error("Enter a valid email.");
-        if (password.length < 6) throw new Error("Password must be at least 6 characters.");
 
-        const exists = users.some((u) => normalizeEmail(u.email) === cleanEmail);
-        if (exists) throw new Error("An account with this email already exists.");
+        if (cleanName.length < 2)
+          throw new Error("Please enter your name.");
 
-        const newUser: StoredUser = {
-          id: crypto.randomUUID(),
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail))
+          throw new Error("Enter a valid email.");
+
+        if (password.length < 6)
+          throw new Error("Password must be at least 6 characters.");
+
+        // 🔥 CALL BACKEND
+        const response = await registerUser({
           name: cleanName,
           email: cleanEmail,
           password,
-          createdAt: new Date().toISOString(),
-        };
-        setUsers((prev) => [newUser, ...prev]);
-        setSession({ userId: newUser.id, createdAt: new Date().toISOString() });
+        });
+
+        localStorage.setItem("token", response.token);
+        setUser(response.user);
       },
+
       login: async ({ email, password }) => {
         const cleanEmail = normalizeEmail(email);
-        const u = users.find((x) => normalizeEmail(x.email) === cleanEmail);
-        if (!u || u.password !== password) throw new Error("Invalid email or password.");
-        setSession({ userId: u.id, createdAt: new Date().toISOString() });
+
+        // 🔥 CALL BACKEND
+        const response = await loginUser({
+          email: cleanEmail,
+          password,
+        });
+
+        localStorage.setItem("token", response.token);
+        setUser(response.user);
       },
+
       logout: () => {
-        setSession(null);
+        localStorage.removeItem("token");
+        setUser(null);
       },
     }),
-    [user, users],
+    [user],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
