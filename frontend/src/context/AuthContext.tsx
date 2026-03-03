@@ -1,7 +1,6 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useContext, useMemo, useState } from "react";
 import { registerUser, loginUser } from "../utils/api";
-const USERS_KEY = "saferoute.users.v1";
-const SESSION_KEY = "saferoute.session.v1";
+
 
 export type StoredUser = {
   id: string;
@@ -11,10 +10,7 @@ export type StoredUser = {
   createdAt: string;
 };
 
-type Session = {
-  userId: string;
-  createdAt: string;
-};
+
 
 type AuthContextValue = {
   user: Pick<StoredUser, "id" | "name" | "email"> | null;
