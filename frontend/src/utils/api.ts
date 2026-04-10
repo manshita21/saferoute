@@ -1,5 +1,5 @@
-const BASE_URL = "http://localhost:5000/api";
-
+//const BASE_URL = "http://localhost:5000/api";
+const BASE_URL = "https://saferoute-tkxm.onrender.com/api";
 export const registerUser = async (data: {
     name: string;
     email: string;
