@@ -1,10 +1,21 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Modal } from "../ui/Modal";
-import { readContacts } from "../../utils/contacts";
+import { type EmergencyContact, fetchContacts } from "../../utils/contacts";
 
 export function SOSButton() {
   const [open, setOpen] = useState(false);
-  const contacts = useMemo(() => readContacts(), [open]);
+  const [contacts, setContacts] = useState<EmergencyContact[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setLoading(true);
+      fetchContacts()
+        .then(setContacts)
+        .catch(console.error)
+        .finally(() => setLoading(false));
+    }
+  }, [open]);
 
   return (
     <>
@@ -24,9 +35,10 @@ export function SOSButton() {
         }
       >
         <div className="d-grid gap-2">
+          {loading && <div className="sr-text-muted small">Loading...</div>}
           {contacts.map((c) => (
             <a
-              key={c.id}
+              key={c._id}
               className="btn sr-btn w-100 d-flex align-items-center justify-content-between"
               href={`tel:${encodeURIComponent(c.phone)}`}
             >

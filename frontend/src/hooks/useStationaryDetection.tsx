@@ -1,44 +1,32 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { haversineMeters, isLateNight, type LatLng } from "../utils/geo";
 
 export type StationaryStage = "none" | "stage1" | "stage2" | "stage3" | "stage4";
 
 export function useStationaryDetection({
   enabled,
-  position,
+  movementStatus,
 }: {
   enabled: boolean;
-  position: LatLng | null;
+  movementStatus: "MOVING" | "IDLE" | "STATIONARY" | "none";
 }) {
   const [stage, setStage] = useState<StationaryStage>("none");
   const [countdown, setCountdown] = useState<number>(0);
 
-  const lastMovedPos = useRef<LatLng | null>(null);
-  const lastMovedAt = useRef<number>(Date.now());
   const stageTimer = useRef<number | null>(null);
   const countdownTimer = useRef<number | null>(null);
-  const lateNight = isLateNight(new Date());
+
+  const ignoredUntilMove = useRef(false);
 
   useEffect(() => {
-    if (!enabled || !position) return;
-    if (!lateNight) return;
+    if (!enabled) return;
 
-    if (!lastMovedPos.current) {
-      lastMovedPos.current = position;
-      lastMovedAt.current = Date.now();
+    if (movementStatus === "MOVING") {
+      ignoredUntilMove.current = false;
+      if (stage === "stage1") setStage("none");
       return;
     }
 
-    const d = haversineMeters(lastMovedPos.current, position);
-    if (d >= 20) {
-      lastMovedPos.current = position;
-      lastMovedAt.current = Date.now();
-      if (stage !== "none") setStage("none");
-      return;
-    }
-
-    const stillForMs = Date.now() - lastMovedAt.current;
-    if (stillForMs >= 30_000 && stage === "none") {
+    if (movementStatus === "STATIONARY" && stage === "none" && !ignoredUntilMove.current) {
       setStage("stage1");
 
       if (stageTimer.current) window.clearTimeout(stageTimer.current);
@@ -46,7 +34,7 @@ export function useStationaryDetection({
         setStage((s) => (s === "stage1" ? "stage2" : s));
       }, 10_000);
     }
-  }, [enabled, lateNight, position, stage]);
+  }, [enabled, movementStatus, stage]);
 
   useEffect(() => {
     if (stage !== "stage3") return;
@@ -55,10 +43,10 @@ export function useStationaryDetection({
     countdownTimer.current = window.setInterval(() => {
       setCountdown((c) => {
         if (c <= 1) {
-          window.clearInterval(countdownTimer.current!);
-          countdownTimer.current = null;
-          setStage("stage4");
-          return 0;
+            window.clearInterval(countdownTimer.current!);
+            countdownTimer.current = null;
+            setStage("stage4");
+            return 0;
         }
         return c - 1;
       });
@@ -67,7 +55,6 @@ export function useStationaryDetection({
 
   useEffect(() => {
     if (stage !== "stage2") return;
-    // Immediately enter countdown view after 300ms to animate overlay
     const t = window.setTimeout(() => setStage("stage3"), 300);
     return () => window.clearTimeout(t);
   }, [stage]);
@@ -86,7 +73,8 @@ export function useStationaryDetection({
         stageTimer.current = null;
         if (countdownTimer.current) window.clearInterval(countdownTimer.current);
         countdownTimer.current = null;
-        lastMovedAt.current = Date.now();
+        
+        ignoredUntilMove.current = true;
         setCountdown(0);
         setStage("none");
       },
@@ -96,13 +84,12 @@ export function useStationaryDetection({
         setStage("stage2");
       },
       dismiss: () => {
-        // allow closing stage4 UI, but keep detection running
+        ignoredUntilMove.current = true;
         setStage("none");
       },
     }),
     [],
   );
 
-  return { stage, countdown, lateNight, actions };
+  return { stage, countdown, actions };
 }
-

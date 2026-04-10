@@ -1,15 +1,27 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import Skeleton from "react-loading-skeleton";
 
 import { SafetyBadge } from "../../components/ui/SafetyBadge";
-import { readTrips, writeTrips, type TripRecord } from "../../utils/trips";
+import { readTrips, clearTrips, type TripRecord } from "../../utils/trips";
 import { notify } from "../../utils/toast";
 
 export function TripHistoryPage() {
   const [q, setQ] = useState("");
   const [version, setVersion] = useState(0);
-  const trips = useMemo(() => {
-    void version;
-    return readTrips();
+  const [trips, setTrips] = useState<TripRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    readTrips()
+      .then((t) => {
+        setTrips(t);
+        setLoading(false);
+      })
+      .catch((e) => {
+        console.error(e);
+        notify.error("Failed to fetch history");
+        setLoading(false);
+      });
   }, [version]);
 
   const filtered = useMemo(() => {
@@ -39,8 +51,8 @@ export function TripHistoryPage() {
             />
             <button
               className="btn sr-btn"
-              onClick={() => {
-                writeTrips([]);
+              onClick={async () => {
+                await clearTrips();
                 setVersion((v) => v + 1);
                 notify.info("Trip history cleared.");
               }}
@@ -53,7 +65,11 @@ export function TripHistoryPage() {
 
         <div className="sr-divider my-4" />
 
-        {filtered.length === 0 ? (
+        {loading ? (
+           <div className="sr-glass-sm p-3">
+             <Skeleton height={140} count={3} />
+           </div>
+        ) : filtered.length === 0 ? (
           <div className="sr-glass-sm p-4 text-center">
             <div
               className="mx-auto mb-2 d-inline-flex align-items-center justify-content-center"

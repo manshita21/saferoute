@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import Skeleton from "react-loading-skeleton";
 import { motion } from "framer-motion";
 
@@ -7,14 +7,14 @@ import { RouteMap } from "../../components/map/RouteMap";
 import { CircularScore } from "../../components/ui/CircularScore";
 import { SafetyBadge } from "../../components/ui/SafetyBadge";
 import { Modal } from "../../components/ui/Modal";
-import { computeSafetyScore, type SafetyResult } from "../../utils/safetyScore";
+import { type SafetyResult } from "../../utils/safetyScore";
+import { checkSafety, createTrip, updateTrip, submitFeedback } from "../../utils/api";
 import { toLatLng, type NominatimResult } from "../../utils/nominatim";
 import type { LatLng } from "../../utils/geo";
 import { useGeolocation } from "../../hooks/useGeolocation";
 import { useStationaryDetection } from "../../hooks/useStationaryDetection";
 import { notify } from "../../utils/toast";
-import { readContacts } from "../../utils/contacts";
-import { readTrips, writeTrips, type TripFeedback, type TripRecord } from "../../utils/trips";
+import { type TripFeedback, type TripRecord } from "../../utils/trips";
 
 export function SafetyTrackerPage() {
   const [sourceText, setSourceText] = useState("");
@@ -24,6 +24,7 @@ export function SafetyTrackerPage() {
   const [time, setTime] = useState(() => new Date().toISOString().slice(11, 16));
   const [result, setResult] = useState<SafetyResult | null>(null);
   const [checking, setChecking] = useState(false);
+  const [movementStatus, setMovementStatus] = useState<"MOVING" | "IDLE" | "STATIONARY" | "none">("none");
 
   const [followUser, setFollowUser] = useState(true);
   const geo = useGeolocation();
@@ -32,7 +33,7 @@ export function SafetyTrackerPage() {
 
   const { stage, countdown, actions } = useStationaryDetection({
     enabled: geo.state.status === "tracking",
-    position: livePosition,
+    movementStatus,
   });
 
   const source = useMemo<LatLng | null>(() => (sourcePick ? toLatLng(sourcePick) : null), [sourcePick]);
@@ -45,13 +46,42 @@ export function SafetyTrackerPage() {
   const [feedbackRating, setFeedbackRating] = useState<TripFeedback["rating"]>("Safe");
   const [feedbackComment, setFeedbackComment] = useState("");
 
+  const currentLat = geo.state.status === "tracking" ? geo.state.lat : undefined;
+  const currentLng = geo.state.status === "tracking" ? geo.state.lng : undefined;
+
+  const liveCoords = useRef({ lat: currentLat, lng: currentLng });
+  useEffect(() => {
+    liveCoords.current = { lat: currentLat, lng: currentLng };
+  }, [currentLat, currentLng]);
+
   useEffect(() => {
     if (geo.state.status !== "tracking") return;
-    if (!activeTripId) return;
-    const trips = readTrips();
-    const next = trips.map((t) => (t.id === activeTripId ? { ...t, status: "tracking" as const } : t));
-    writeTrips(next);
-  }, [activeTripId, geo.state.status]);
+
+    if (activeTripId) {
+      updateTrip(activeTripId, { status: "tracking" }).catch(console.error);
+    }
+
+    const interval = window.setInterval(async () => {
+      const { lat, lng: lon } = liveCoords.current;
+      if (lat === undefined || lon === undefined) return;
+
+      try {
+        const safety = await checkSafety({
+          source: sourcePick?.display_name || "",
+          destination: destinationPick?.display_name || "",
+          time,
+          lat,
+          lon
+        });
+        if (safety.movementStatus) {
+          setMovementStatus(safety.movementStatus);
+        }
+      } catch (e) {
+        console.error("Polling error", e);
+      }
+    }, 10000);
+    return () => window.clearInterval(interval);
+  }, [activeTripId, geo.state.status, sourcePick?.display_name, destinationPick?.display_name, time]);
 
   useEffect(() => {
     // If user edits text after picking, clear the pick to avoid stale coords.
@@ -146,34 +176,44 @@ export function SafetyTrackerPage() {
                     <button
                       className="btn sr-btn sr-btn-primary w-100"
                       disabled={checking || !source || !destination}
-                      onClick={() => {
+                      onClick={async () => {
                         if (!source || !destination || !sourcePick || !destinationPick) {
                           notify.error("Pick both source and destination from search.");
                           return;
                         }
                         setChecking(true);
-                        window.setTimeout(() => {
-                          const safety = computeSafetyScore({ plannedTime: plannedTimeAsDate(), seed: tripSeed });
-                          setResult(safety);
-                          setChecking(false);
+                        try {
+                          const safetyResp = await checkSafety({
+                            source: sourcePick.display_name,
+                            destination: destinationPick.display_name,
+                            time
+                          });
 
-                          const trip: TripRecord = {
-                            id: crypto.randomUUID(),
+                          setResult({
+                            score: safetyResp.score,
+                            level: safetyResp.level,
+                            breakdown: { timeRisk: 80, community: 80, environment: 80 },
+                            notes: [`Community feedback count: ${safetyResp.CommunityFeedbackCount}`]
+                          });
+
+                          const newTrip = await createTrip({
                             createdAt: new Date().toISOString(),
                             plannedTimeISO: plannedTimeAsDate().toISOString(),
                             sourceLabel: sourcePick.display_name,
                             destinationLabel: destinationPick.display_name,
                             source,
                             destination,
-                            safetyScore: safety.score,
-                            safetyLevel: safety.level,
+                            safetyScore: safetyResp.score,
+                            safetyLevel: safetyResp.level,
                             status: "planned",
-                          };
-                          const trips = readTrips();
-                          writeTrips([trip, ...trips]);
-                          setActiveTripId(trip.id);
+                          });
+                          setActiveTripId(newTrip.id);
                           notify.success("Safety score generated.");
-                        }, 650);
+                        } catch (e: any) {
+                          notify.error(e.message || "Failed to check safety.");
+                        } finally {
+                          setChecking(false);
+                        }
                       }}
                     >
                       {checking ? "Checking…" : "Check Safety"}
@@ -196,15 +236,11 @@ export function SafetyTrackerPage() {
                     ) : (
                       <button
                         className="btn sr-btn btn-sm"
-                        onClick={() => {
+                        onClick={async () => {
                           geo.stop();
+                          setMovementStatus("none");
                           if (activeTripId) {
-                            const trips = readTrips();
-                            writeTrips(
-                              trips.map((t) =>
-                                t.id === activeTripId ? { ...t, status: "completed" as const } : t,
-                              ),
-                            );
+                            await updateTrip(activeTripId, { status: "completed" });
                             setFeedbackOpen(true);
                           }
                           notify.info("Live tracking stopped.");
@@ -364,7 +400,7 @@ export function SafetyTrackerPage() {
         }
       >
         <div className="sr-text-muted">
-          If you’re stopped for a while during late hours, we’ll check in. If you don’t respond, Emergency Mode will
+          If you’re stopped for a while, we’ll check in. If you don’t respond, Emergency Mode will
           activate and show quick call options.
         </div>
       </Modal>
@@ -401,12 +437,14 @@ export function SafetyTrackerPage() {
                   <div className="fw-semibold">Quick call</div>
                   <div className="sr-text-muted mt-1">Tap to call an emergency contact.</div>
                   <div className="d-grid gap-2 mt-3">
-                    {readContacts().map((c) => (
-                      <a key={c.id} className="btn sr-btn w-100 d-flex justify-content-between" href={`tel:${c.phone}`}>
-                        <span className="fw-semibold">{c.name}</span>
-                        <span className="sr-text-muted">{c.phone}</span>
-                      </a>
-                    ))}
+                    <button className="btn sr-btn w-100 d-flex justify-content-between" onClick={() => window.location.href = "tel:108"}>
+                      <span className="fw-semibold">Ambulance</span>
+                      <span className="sr-text-muted">108</span>
+                    </button>
+                    <button className="btn sr-btn w-100 d-flex justify-content-between" onClick={() => window.location.href = "tel:100"}>
+                      <span className="fw-semibold">Police</span>
+                      <span className="sr-text-muted">100</span>
+                    </button>
                   </div>
                   <button className="btn sr-btn w-100 mt-3" onClick={actions.dismiss}>
                     Dismiss
@@ -429,27 +467,31 @@ export function SafetyTrackerPage() {
             </button>
             <button
               className="btn sr-btn sr-btn-primary"
-              onClick={() => {
+              onClick={async () => {
                 if (!activeTripId) return;
-                const trips = readTrips();
-                writeTrips(
-                  trips.map((t) =>
-                    t.id === activeTripId
-                      ? {
-                          ...t,
-                          feedback: {
-                            rating: feedbackRating,
-                            comment: feedbackComment.trim() || undefined,
-                          },
-                          status: "completed" as const,
-                        }
-                      : t,
-                  ),
-                );
-                notify.success("Thanks for your feedback.");
-                setFeedbackOpen(false);
-                setFeedbackComment("");
-                setFeedbackRating("Safe");
+                try {
+                  await updateTrip(activeTripId, { status: "completed" });
+
+                  const ratingInt = feedbackRating === "Safe" ? 5 : 1;
+                  let endT = new Date();
+                  let endMins = endT.getMinutes().toString().padStart(2, '0');
+                  let travelTime = `${endT.getHours()}:${endMins}`;
+
+                  await submitFeedback({
+                    source: sourcePick?.display_name || "",
+                    destination: destinationPick?.display_name || "",
+                    rating: ratingInt,
+                    comment: feedbackComment.trim() || undefined,
+                    travelTime
+                  });
+
+                  notify.success("Thanks for your feedback.");
+                  setFeedbackOpen(false);
+                  setFeedbackComment("");
+                  setFeedbackRating("Safe");
+                } catch (e: any) {
+                  notify.error("Failed to save feedback.");
+                }
               }}
             >
               Save feedback

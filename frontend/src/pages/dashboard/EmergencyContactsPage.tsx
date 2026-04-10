@@ -1,28 +1,32 @@
-//import { addContact, getContacts, deleteContact } from "../../utils/contacts";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Skeleton from "react-loading-skeleton";
 
-
-import { useLocalStorageState } from "../../hooks/useLocalStorage";
 import {
-  CONTACTS_KEY,
-  EmergencyContact,
-  ensureContactsSeeded,
-  readContacts,
+  type EmergencyContact,
+  fetchContacts,
+  addContact,
+  deleteContact,
 } from "../../utils/contacts";
 import { notify } from "../../utils/toast";
 
 export function EmergencyContactsPage() {
-  ensureContactsSeeded();
-  const [contacts, setContacts] = useLocalStorageState<EmergencyContact[]>(
-    CONTACTS_KEY,
-    readContacts(),
-  );
-  // const [contacts, setContacts] = useState<EmergencyContact[]>([]);
+  const [contacts, setContacts] = useState<EmergencyContact[]>([]);
   const [q, setQ] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchContacts().then(c => {
+      setContacts(c);
+      setLoading(false);
+    }).catch(e => {
+      console.error(e);
+      notify.error("Failed to load contacts");
+      setLoading(false);
+    });
+  }, []);
 
   const filtered = useMemo(() => {
     const query = q.trim().toLowerCase();
@@ -68,7 +72,7 @@ export function EmergencyContactsPage() {
                 Add contact
               </div>
               <form
-                onSubmit={(e) => {
+                onSubmit={async (e) => {
                   e.preventDefault();
                   const n = name.trim();
                   const p = phone.trim();
@@ -76,17 +80,17 @@ export function EmergencyContactsPage() {
                   if (p.length < 2) return notify.error("Enter a phone number.");
 
                   setBusy(true);
-                  const newContact: EmergencyContact = {
-                    id: crypto.randomUUID(),
-                    name: n,
-                    phone: p,
-                    createdAt: new Date().toISOString(),
-                  };
-                  setContacts([newContact, ...contacts]);
-                  setName("");
-                  setPhone("");
-                  setBusy(false);
-                  notify.success("Contact saved.");
+                  try {
+                      const newContact = await addContact({ name: n, phone: p, relation: "Family/Friend" });
+                      setContacts([newContact, ...contacts]);
+                      setName("");
+                      setPhone("");
+                      notify.success("Contact saved.");
+                  } catch (err: any) {
+                      notify.error(err.message || "Failed to save contact");
+                  } finally {
+                      setBusy(false);
+                  }
                 }}
               >
                 <div className="mb-2">
@@ -119,13 +123,13 @@ export function EmergencyContactsPage() {
 
           <div className="col-12 col-lg-7">
             <div className="d-grid gap-2">
-              {busy && (
+              {loading && (
                 <div className="sr-glass-sm p-3">
                   <Skeleton height={52} count={3} />
                 </div>
               )}
 
-              {!busy && filtered.length === 0 && (
+              {!loading && filtered.length === 0 && (
                 <div className="sr-glass-sm p-4 text-center">
                   <div
                     className="mx-auto mb-2 d-inline-flex align-items-center justify-content-center"
@@ -146,9 +150,9 @@ export function EmergencyContactsPage() {
                 </div>
               )}
 
-              {!busy &&
+              {!loading &&
                 filtered.map((c) => (
-                  <div key={c.id} className="sr-glass-sm p-3">
+                  <div key={c._id} className="sr-glass-sm p-3">
                     <div className="d-flex align-items-center justify-content-between gap-3">
                       <div className="d-flex align-items-center gap-3">
                         <div
@@ -174,13 +178,18 @@ export function EmergencyContactsPage() {
                         </a>
                         <button
                           className="btn sr-btn btn-sm"
-                          onClick={() => {
-                            if (c.id === "ambulance-108" || c.id === "police-100") {
+                          onClick={async () => {
+                            if (c._id === "ambulance-108" || c._id === "police-100") {
                               notify.info("Default contacts can’t be removed.");
                               return;
                             }
-                            setContacts(contacts.filter((x) => x.id !== c.id));
-                            notify.success("Contact deleted.");
+                            try {
+                                await deleteContact(c._id);
+                                setContacts(contacts.filter((x) => x._id !== c._id));
+                                notify.success("Contact deleted.");
+                            } catch (e: any) {
+                                notify.error("Failed to delete contact.");
+                            }
                           }}
                           aria-label={`Delete ${c.name}`}
                         >

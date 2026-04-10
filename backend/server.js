@@ -37,6 +37,7 @@ console.log("feedbackRoutes type:", typeof feedbackRoutes);
 app.use("/api/emergency", emergencyRoutes);
 app.use("/api/safety", safetyRoutes);
 app.use("/api/feedback", feedbackRoutes);
+app.use("/api/trips", require("./src/routes/tripRoutes"));
 
 const authRoutes = require("./src/routes/authRoutes");
 console.log("authRoutes type:", typeof authRoutes);

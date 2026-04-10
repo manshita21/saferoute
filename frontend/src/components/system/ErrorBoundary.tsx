@@ -8,11 +8,11 @@ type State = {
   hasError: boolean;
 };
 
-export class ErrorBoundary extends React.Component<Props, State> {
-  state: State = { hasError: false };
+export class ErrorBoundary extends React.Component<Props, State & { error?: Error }> {
+  state: State & { error?: Error } = { hasError: false };
 
-  static getDerivedStateFromError() {
-    return { hasError: true };
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
   }
 
   render() {
@@ -39,7 +39,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
               <div>
                 <div className="fs-5 fw-semibold">Something went wrong</div>
                 <div className="sr-text-muted">
-                  SafeRoute hit an unexpected error. Please refresh to continue.
+                  {this.state.error?.message || "SafeRoute hit an unexpected error. Please refresh to continue."}
                 </div>
               </div>
             </div>
