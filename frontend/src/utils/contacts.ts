@@ -1,30 +1,70 @@
-import { readStorage, writeStorage } from "./storage";
+// frontend/src/utils/contacts.ts
+
+const BASE_URL = "https://saferoute-tkxm.onrender.com/api";
 
 export type EmergencyContact = {
-  id: string;
+  _id: string;
   name: string;
   phone: string;
   createdAt: string;
 };
 
-export const CONTACTS_KEY = "saferoute.contacts.v1";
-
-const defaultContacts: EmergencyContact[] = [
-  { id: "ambulance-108", name: "Ambulance", phone: "108", createdAt: new Date(0).toISOString() },
-  { id: "police-100", name: "Police", phone: "100", createdAt: new Date(0).toISOString() },
-];
-
-export function ensureContactsSeeded() {
-  const existing = readStorage<EmergencyContact[] | null>(CONTACTS_KEY, null);
-  if (!existing) writeStorage(CONTACTS_KEY, defaultContacts);
+// 🔐 Get token from localStorage
+function getToken() {
+  return localStorage.getItem("token");
 }
 
-export function readContacts(): EmergencyContact[] {
-  ensureContactsSeeded();
-  return readStorage<EmergencyContact[]>(CONTACTS_KEY, defaultContacts);
+// ✅ GET CONTACTS (from MongoDB)
+export async function fetchContacts(): Promise<EmergencyContact[]> {
+  const res = await fetch(`${BASE_URL}/emergency`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${getToken()}`,
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch contacts");
+  }
+
+  return res.json();
 }
 
-export function writeContacts(contacts: EmergencyContact[]) {
-  writeStorage(CONTACTS_KEY, contacts);
+// ✅ ADD CONTACT (store in MongoDB)
+export async function addContact(data: {
+  name: string;
+  phone: string;
+}): Promise<EmergencyContact> {
+  const res = await fetch(`${BASE_URL}/emergency`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${getToken()}`,
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.message || "Failed to add contact");
+  }
+
+  return res.json();
 }
 
+// ✅ DELETE CONTACT
+export async function deleteContact(id: string) {
+  const res = await fetch(`${BASE_URL}/emergency/${id}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${getToken()}`,
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to delete contact");
+  }
+
+  return res.json();
+}

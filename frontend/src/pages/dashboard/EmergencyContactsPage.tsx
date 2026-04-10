@@ -1,5 +1,7 @@
+//import { addContact, getContacts, deleteContact } from "../../utils/contacts";
 import { useMemo, useState } from "react";
 import Skeleton from "react-loading-skeleton";
+
 
 import { useLocalStorageState } from "../../hooks/useLocalStorage";
 import {
@@ -16,6 +18,7 @@ export function EmergencyContactsPage() {
     CONTACTS_KEY,
     readContacts(),
   );
+  // const [contacts, setContacts] = useState<EmergencyContact[]>([]);
   const [q, setQ] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
