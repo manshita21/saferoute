@@ -1,7 +1,7 @@
 // frontend/src/utils/contacts.ts
 
+//const BASE_URL = "https://saferoute-tkxm.onrender.com/api";
 const BASE_URL = "http://localhost:5000/api";
-
 export type EmergencyContact = {
   _id: string;
   name: string;
@@ -28,12 +28,7 @@ export async function fetchContacts(): Promise<EmergencyContact[]> {
     throw new Error("Failed to fetch contacts");
   }
 
-  const userContacts = await res.json();
-  const defaults: EmergencyContact[] = [
-      { _id: "ambulance-108", name: "Ambulance", phone: "108", createdAt: new Date().toISOString() },
-      { _id: "police-100", name: "Police", phone: "100", createdAt: new Date().toISOString() }
-  ];
-  return [...defaults, ...userContacts];
+  return res.json();
 }
 
 // ✅ ADD CONTACT (store in MongoDB)
