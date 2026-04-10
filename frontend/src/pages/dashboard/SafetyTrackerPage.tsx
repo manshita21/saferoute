@@ -14,7 +14,7 @@ import type { LatLng } from "../../utils/geo";
 import { useGeolocation } from "../../hooks/useGeolocation";
 import { useStationaryDetection } from "../../hooks/useStationaryDetection";
 import { notify } from "../../utils/toast";
-import { type TripFeedback, type TripRecord } from "../../utils/trips";
+import { type TripFeedback, } from "../../utils/trips";
 
 export function SafetyTrackerPage() {
   const [sourceText, setSourceText] = useState("");
@@ -93,11 +93,11 @@ export function SafetyTrackerPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [destinationText]);
 
-  const tripSeed = useMemo(() => {
-    const s = sourcePick?.place_id ?? "s";
-    const d = destinationPick?.place_id ?? "d";
-    return `${s}-${d}-${time}`;
-  }, [destinationPick?.place_id, sourcePick?.place_id, time]);
+  /* const tripSeed = useMemo(() => {
+     const s = sourcePick?.place_id ?? "s";
+     const d = destinationPick?.place_id ?? "d";
+     return `${s}-${d}-${time}`;
+   }, [destinationPick?.place_id, sourcePick?.place_id, time]);*/
 
   function plannedTimeAsDate() {
     const now = new Date();
